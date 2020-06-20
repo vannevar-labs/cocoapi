@@ -424,7 +424,7 @@ class COCOeval:
         Compute and display summary metrics for evaluation results.
         Note this functin can *only* be applied on the default parameter setting
         '''
-        def _summarize( ap=1, iouThr=None, areaRng='all', maxDets=100 ):
+        def _summarize( ap=1, iouThr=None, areaRng='all', maxDets=self.params.maxDets[-1] ):
             p = self.params
             iStr = ' {:<18} {} @[ IoU={:<9} | area={:>6s} | maxDets={:>3d} ] = {:0.3f}'
             titleStr = 'Average Precision' if ap == 1 else 'Average Recall'
@@ -456,20 +456,19 @@ class COCOeval:
             print(iStr.format(titleStr, typeStr, iouStr, areaRng, maxDets, mean_s))
             return mean_s
         def _summarizeDets():
-            stats = np.zeros((12,))
-            stats[0] = _summarize(1)
-            stats[1] = _summarize(1, iouThr=.5, maxDets=self.params.maxDets[2])
-            stats[2] = _summarize(1, iouThr=.75, maxDets=self.params.maxDets[2])
-            stats[3] = _summarize(1, areaRng='small', maxDets=self.params.maxDets[2])
-            stats[4] = _summarize(1, areaRng='medium', maxDets=self.params.maxDets[2])
-            stats[5] = _summarize(1, areaRng='large', maxDets=self.params.maxDets[2])
-            stats[6] = _summarize(0, maxDets=self.params.maxDets[0])
-            stats[7] = _summarize(0, maxDets=self.params.maxDets[1])
-            stats[8] = _summarize(0, maxDets=self.params.maxDets[2])
-            stats[9] = _summarize(0, areaRng='small', maxDets=self.params.maxDets[2])
-            stats[10] = _summarize(0, areaRng='medium', maxDets=self.params.maxDets[2])
-            stats[11] = _summarize(0, areaRng='large', maxDets=self.params.maxDets[2])
-            return stats
+            stats = []
+            stats.append(_summarize(1))
+            stats.append(_summarize(1, iouThr=.5, maxDets=self.params.maxDets[-1]))
+            stats.append(_summarize(1, iouThr=.75, maxDets=self.params.maxDets[-1]))
+            stats.append(_summarize(1, areaRng='small', maxDets=self.params.maxDets[-1]))
+            stats.append(_summarize(1, areaRng='medium', maxDets=self.params.maxDets[-1]))
+            stats.append(_summarize(1, areaRng='large', maxDets=self.params.maxDets[-1]))
+            for maxDets in self.params.maxDets:
+                stats.append(_summarize(0, maxDets=maxDets))
+            stats.append(_summarize(0, areaRng='small', maxDets=self.params.maxDets[-1]))
+            stats.append(_summarize(0, areaRng='medium', maxDets=self.params.maxDets[-1]))
+            stats.append(_summarize(0, areaRng='large', maxDets=self.params.maxDets[-1]))
+            return np.asarray(stats)
         def _summarizeKps():
             stats = np.zeros((10,))
             stats[0] = _summarize(1, maxDets=20)
@@ -505,7 +504,7 @@ class Params:
         # np.arange causes trouble.  the data point on arange is slightly larger than the true value
         self.iouThrs = np.linspace(.5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
         self.recThrs = np.linspace(.0, 1.00, int(np.round((1.00 - .0) / .01)) + 1, endpoint=True)
-        self.maxDets = [1, 10, 100, 1000]
+        self.maxDets = [1, 10, 100, 1000, 10000]
         self.areaRng = [[0 ** 2, 1e5 ** 2], [0 ** 2, 32 ** 2], [32 ** 2, 96 ** 2], [96 ** 2, 1e5 ** 2]]
         self.areaRngLbl = ['all', 'small', 'medium', 'large']
         self.useCats = 1
